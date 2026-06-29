@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Talent Sign Capture</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="workspace" aria-label="サイン入力">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Mobile Sign Capture</p>
+            <h1>サイン登録</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="status-pill" id="save-status" role="status" aria-live="polite">未保存</div>
+          </div>
+        </header>
+
+        <form class="talent-form" id="talent-form">
+          <label>
+            <span>タレント名</span>
+            <input id="talent-name" name="talentName" autocomplete="name" required />
+          </label>
+        </form>
+
+        <aside class="library" aria-label="保存済みサイン">
+          <div class="library-head">
+            <h2>保存済み</h2>
+            <div class="library-actions">
+              <button class="text-button" id="replay-button" type="button">再生</button>
+              <label class="import-button">
+                読み込み
+                <input id="import-input" type="file" accept="application/json,.json" />
+              </label>
+            </div>
+          </div>
+          <div class="record-list" id="record-list"></div>
+        </aside>
+
+        <div class="canvas-frame">
+          <canvas id="sign-canvas" aria-label="サインを書くキャンバス"></canvas>
+        </div>
+
+        <div class="toolbar" aria-label="描画ツール">
+          <div class="tool-group primary-actions">
+            <button class="text-button primary" id="save-button" type="button">保存</button>
+            <button class="text-button danger" id="clear-button" type="button">やり直し</button>
+          </div>
+          <div class="tool-group">
+            <button class="icon-button is-active" id="pen-tool" type="button" aria-label="ペン">✎</button>
+            <button class="icon-button" id="eraser-tool" type="button" aria-label="消しゴム">⌫</button>
+            <button class="text-button" id="undo-button" type="button">戻す</button>
+          </div>
+          <label class="range-field">
+            <span>太さ</span>
+            <input id="brush-size" type="range" min="2" max="20" value="6" />
+          </label>
+          <fieldset class="color-field" aria-label="ペンの色">
+            <legend>色</legend>
+            <label class="color-swatch is-active" style="--swatch: #111111">
+              <input type="radio" name="penColor" value="#111111" checked />
+              <span>黒</span>
+            </label>
+            <label class="color-swatch" style="--swatch: #d12b2b">
+              <input type="radio" name="penColor" value="#d12b2b" />
+              <span>赤</span>
+            </label>
+            <label class="color-swatch" style="--swatch: #1f5fbf">
+              <input type="radio" name="penColor" value="#1f5fbf" />
+              <span>青</span>
+            </label>
+            <label class="color-swatch" style="--swatch: #0c6b5d">
+              <input type="radio" name="penColor" value="#0c6b5d" />
+              <span>緑</span>
+            </label>
+          </fieldset>
+        </div>
+      </section>
+
+    </main>
+
+    <template id="record-template">
+      <article class="record-card">
+        <button class="record-main" type="button">
+          <strong></strong>
+          <span></span>
+        </button>
+        <button class="record-delete" type="button" aria-label="削除">×</button>
+      </article>
+    </template>
+
+    <script defer src="./app.js"></script>
+  </body>
+</html>
