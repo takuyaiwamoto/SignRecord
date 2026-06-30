@@ -5,14 +5,13 @@ const chooser = document.getElementById('chooser');
 const stage = document.getElementById('stage');
 const recordList = document.getElementById('record-list');
 const speedInput = document.getElementById('speed-input');
-const autoClearInput = document.getElementById('auto-clear-input');
 const statusText = document.getElementById('status');
 
 let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
 let records = [];
 let selectedRecord = null;
 let replayTimerId = null;
-let autoClearTimerId = null;
+let motionTimerIds = [];
 let paperRect = { x: 0, y: 0, width: 0, height: 0 };
 
 function setStatus(text) {
@@ -72,10 +71,32 @@ function stopReplay() {
     window.clearTimeout(replayTimerId);
     replayTimerId = null;
   }
-  if (autoClearTimerId) {
-    window.clearTimeout(autoClearTimerId);
-    autoClearTimerId = null;
-  }
+  motionTimerIds.forEach((timerId) => window.clearTimeout(timerId));
+  motionTimerIds = [];
+}
+
+function queueMotion(callback, delayMs) {
+  const timerId = window.setTimeout(() => {
+    motionTimerIds = motionTimerIds.filter((id) => id !== timerId);
+    callback();
+  }, delayMs);
+  motionTimerIds.push(timerId);
+}
+
+function resetStageMotion() {
+  stage.classList.remove('is-writing', 'is-turning', 'is-sliding');
+}
+
+function runCompletionMotion() {
+  queueMotion(() => {
+    stage.classList.remove('is-writing');
+    stage.classList.add('is-turning');
+    queueMotion(() => {
+      queueMotion(() => {
+        stage.classList.add('is-sliding');
+      }, 1000);
+    }, 1000);
+  }, 1000);
 }
 
 function normalizeColor(color) {
@@ -182,6 +203,8 @@ function normalizeStrokeTiming(stroke, strokeIndex) {
 
 function replayRecord(record) {
   stopReplay();
+  resetStageMotion();
+  stage.classList.add('is-writing');
   clearCanvas();
 
   const strokes = Array.isArray(record.strokes) ? record.strokes : [];
@@ -238,12 +261,7 @@ function replayRecord(record) {
 
     replayTimerId = null;
     setStatus('再生完了');
-    if (autoClearInput.checked) {
-      autoClearTimerId = window.setTimeout(() => {
-        autoClearTimerId = null;
-        clearCanvas();
-      }, 1500);
-    }
+    runCompletionMotion();
   };
 
   tick();
@@ -282,6 +300,7 @@ function selectRecord(index) {
   appRoot.classList.remove('app-choosing');
   chooser.hidden = true;
   stage.hidden = false;
+  resetStageMotion();
   requestAnimationFrame(() => {
     resizeCanvas();
     replayRecord(selectedRecord);
