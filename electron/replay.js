@@ -13,6 +13,9 @@ let selectedRecord = null;
 let replayTimerId = null;
 let motionTimerIds = [];
 let paperRect = { x: 0, y: 0, width: 0, height: 0 };
+let paperMotion = { rotationDeg: 0, slideY: 0 };
+let motionAnimationId = null;
+let currentDrawItems = [];
 
 function setStatus(text) {
   statusText.textContent = text;
@@ -43,7 +46,7 @@ function updatePaperRect() {
   const verticalSpace = Math.max(0, canvas.height - height);
   paperRect = {
     x: (canvas.width - width) / 2,
-    y: Math.max(12 * dpr, Math.min(verticalSpace - 12 * dpr, verticalSpace * 0.92)),
+    y: Math.max(12 * dpr, verticalSpace * 0.08),
     width,
     height,
   };
@@ -55,6 +58,7 @@ function clearCanvas() {
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
   ctx.save();
+  applyPaperTransform();
   ctx.shadowColor = 'rgba(46, 34, 38, 0.16)';
   ctx.shadowBlur = 22 * dpr;
   ctx.shadowOffsetY = 12 * dpr;
@@ -62,9 +66,12 @@ function clearCanvas() {
   ctx.fillRect(paperRect.x, paperRect.y, paperRect.width, paperRect.height);
   ctx.restore();
 
+  ctx.save();
+  applyPaperTransform();
   ctx.strokeStyle = '#eadfce';
   ctx.lineWidth = 1.5 * dpr;
   ctx.strokeRect(paperRect.x, paperRect.y, paperRect.width, paperRect.height);
+  ctx.restore();
 }
 
 function stopReplay() {
@@ -74,6 +81,10 @@ function stopReplay() {
   }
   motionTimerIds.forEach((timerId) => window.clearTimeout(timerId));
   motionTimerIds = [];
+  if (motionAnimationId) {
+    window.cancelAnimationFrame(motionAnimationId);
+    motionAnimationId = null;
+  }
 }
 
 function queueMotion(callback, delayMs) {
@@ -85,19 +96,53 @@ function queueMotion(callback, delayMs) {
 }
 
 function resetStageMotion() {
-  stage.classList.remove('is-writing', 'is-turning', 'is-sliding');
+  paperMotion = { rotationDeg: 0, slideY: 0 };
 }
 
 function runCompletionMotion() {
   queueMotion(() => {
-    stage.classList.remove('is-writing');
-    stage.classList.add('is-turning');
-    queueMotion(() => {
+    animatePaperMotion({ rotationDeg: 180, slideY: 0 }, { rotationDeg: 360, slideY: 0 }, 1000, () => {
       queueMotion(() => {
-        stage.classList.add('is-sliding');
+        animatePaperMotion(
+          { rotationDeg: 360, slideY: 0 },
+          { rotationDeg: 360, slideY: canvas.height + paperRect.height * 2 },
+          1000
+        );
       }, 1000);
-    }, 1000);
+    });
   }, 1000);
+}
+
+function animatePaperMotion(from, to, durationMs, onDone) {
+  const startedAt = performance.now();
+
+  const tick = (now) => {
+    const progress = Math.min(1, (now - startedAt) / durationMs);
+    const eased = progress < 0.5 ? 2 * progress * progress : 1 - (-2 * progress + 2) ** 2 / 2;
+    paperMotion = {
+      rotationDeg: from.rotationDeg + (to.rotationDeg - from.rotationDeg) * eased,
+      slideY: from.slideY + (to.slideY - from.slideY) * eased,
+    };
+    renderCurrentFrame();
+
+    if (progress < 1) {
+      motionAnimationId = window.requestAnimationFrame(tick);
+      return;
+    }
+
+    motionAnimationId = null;
+    if (onDone) onDone();
+  };
+
+  motionAnimationId = window.requestAnimationFrame(tick);
+}
+
+function applyPaperTransform() {
+  const centerX = paperRect.x + paperRect.width / 2;
+  const centerY = paperRect.y + paperRect.height / 2;
+  ctx.translate(centerX, centerY + paperMotion.slideY);
+  ctx.rotate((paperMotion.rotationDeg * Math.PI) / 180);
+  ctx.translate(-centerX, -centerY);
 }
 
 function normalizeColor(color) {
@@ -156,6 +201,7 @@ function drawStroke(stroke, points = stroke.points || []) {
 
   const { x, y, width, height } = getSignatureRect();
   ctx.save();
+  applyPaperTransform();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = stroke.tool === 'eraser' ? '#ffffff' : normalizeColor(stroke.color);
@@ -186,6 +232,13 @@ function drawStroke(stroke, points = stroke.points || []) {
   ctx.restore();
 }
 
+function renderCurrentFrame() {
+  clearCanvas();
+  currentDrawItems.forEach((item) => {
+    drawStroke(item.stroke, item.points);
+  });
+}
+
 function normalizeStrokeTiming(stroke, strokeIndex) {
   const fallbackStart = strokeIndex * 120;
   const startedAtElapsedMs = Number.isFinite(stroke.startedAtElapsedMs)
@@ -205,7 +258,8 @@ function normalizeStrokeTiming(stroke, strokeIndex) {
 function replayRecord(record) {
   stopReplay();
   resetStageMotion();
-  stage.classList.add('is-writing');
+  paperMotion = { rotationDeg: 180, slideY: 0 };
+  currentDrawItems = [];
   clearCanvas();
 
   const strokes = Array.isArray(record.strokes) ? record.strokes : [];
@@ -246,13 +300,10 @@ function replayRecord(record) {
       cursor += 1;
     }
 
-    clearCanvas();
-    [...partial.keys()]
+    currentDrawItems = [...partial.keys()]
       .sort((a, b) => a - b)
-      .forEach((key) => {
-        const item = partial.get(key);
-        drawStroke(item.stroke, item.points);
-      });
+      .map((key) => partial.get(key));
+    renderCurrentFrame();
 
     if (cursor < events.length) {
       const nextDelay = Math.max(8, (events[cursor].at - elapsed) / speed);
