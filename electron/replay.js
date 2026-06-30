@@ -2,6 +2,7 @@ const canvas = document.getElementById('replay-canvas');
 const ctx = canvas.getContext('2d');
 const fileInput = document.getElementById('file-input');
 const jsonInput = document.getElementById('json-input');
+const fetchButton = document.getElementById('fetch-button');
 const parseButton = document.getElementById('parse-button');
 const recordSelect = document.getElementById('record-select');
 const replayButton = document.getElementById('replay-button');
@@ -271,6 +272,29 @@ function loadJsonText(text) {
   renderRecords();
   setStatus(`${records.length}件を読み込みました`);
 }
+
+function loadRows(rows) {
+  const nextRecords = extractRecords(rows);
+  if (!nextRecords.length) throw new Error('サインレコードが見つかりません');
+  records = nextRecords;
+  renderRecords();
+  setStatus(`サーバから${records.length}件を取得しました`);
+}
+
+fetchButton.addEventListener('click', async () => {
+  fetchButton.disabled = true;
+  setStatus('サーバから取得中');
+
+  try {
+    const rows = await window.signReplay.fetchRecords();
+    loadRows(rows);
+  } catch (error) {
+    console.error(error);
+    setStatus('サーバ取得失敗: service_roleキーかSELECT権限を確認');
+  } finally {
+    fetchButton.disabled = false;
+  }
+});
 
 fileInput.addEventListener('change', async () => {
   const file = fileInput.files?.[0];

@@ -1,5 +1,51 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
+const fs = require('node:fs');
 const path = require('node:path');
+
+const SUPABASE_URL = 'https://tqwtcsbdfriyiirzmmit.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4T6OLyoDE9-eS9y-TTZIFQ_OXICQf9t';
+
+function loadLocalEnv() {
+  const envPath = path.join(__dirname, '..', '.env.local');
+  if (!fs.existsSync(envPath)) return;
+
+  const text = fs.readFileSync(envPath, 'utf8');
+  text.split(/\r?\n/).forEach((line) => {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith('#')) return;
+    const separatorIndex = trimmed.indexOf('=');
+    if (separatorIndex === -1) return;
+
+    const key = trimmed.slice(0, separatorIndex).trim();
+    const rawValue = trimmed.slice(separatorIndex + 1).trim();
+    if (!key || process.env[key]) return;
+    process.env[key] = rawValue.replace(/^["']|["']$/g, '');
+  });
+}
+
+async function fetchSignRecords() {
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const apiKey = serviceRoleKey || process.env.SUPABASE_PUBLISHABLE_KEY || SUPABASE_PUBLISHABLE_KEY;
+  const url = new URL('/rest/v1/sign_records', SUPABASE_URL);
+  url.searchParams.set('select', 'id,event_id,talent_name,payload,created_at');
+  url.searchParams.set('order', 'created_at.desc');
+  url.searchParams.set('limit', '200');
+
+  const response = await fetch(url, {
+    headers: {
+      apikey: apiKey,
+      Authorization: `Bearer ${apiKey}`,
+      Accept: 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    const body = await response.text();
+    throw new Error(`Supabase read failed: ${response.status} ${body}`);
+  }
+
+  return response.json();
+}
 
 function createWindow() {
   const window = new BrowserWindow({
@@ -12,12 +58,17 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.cjs'),
       sandbox: true,
     },
   });
 
   window.loadFile(path.join(__dirname, 'replay.html'));
 }
+
+loadLocalEnv();
+
+ipcMain.handle('sign-records:fetch', fetchSignRecords);
 
 app.whenReady().then(() => {
   createWindow();

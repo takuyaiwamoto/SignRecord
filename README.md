@@ -29,6 +29,26 @@ npm run replay
 
 SupabaseのTable Editorで `sign_records` を開き、対象行の `payload` をコピーして、Electron画面のテキスト欄に貼り付けます。`payload` 単体、`payload` の配列、`sign_records` の行配列JSONのどれでも読み込めます。
 
+Electron画面の「サーバから取得」を押すと、Supabaseの `sign_records` から最新200件を取得して一覧表示します。ローカルだけで安全に読む場合は、`talent-sign-capture/.env.local` に以下を保存します。
+
+```bash
+SUPABASE_SERVICE_ROLE_KEY=Supabaseのservice_roleキー
+```
+
+このファイルはgit管理外です。未設定の場合は公開キーで取得を試しますが、その場合はSupabase側で `anon` のSELECTポリシーが必要です。
+
+公開キーでElectronから読む場合は、Supabase SQL Editorで以下を実行します。ただし、この設定は公開URLを知っている人がAPI経由で保存済みサインを読める状態に近くなるため、通常は `SUPABASE_SERVICE_ROLE_KEY` を使う運用を優先します。
+
+```sql
+grant select on public.sign_records to anon;
+
+create policy "allow anonymous select"
+on public.sign_records
+for select
+to anon
+using (true);
+```
+
 再生完了後は、初期設定で1.5秒後にキャンバスが白紙になります。
 
 ## 保存データ

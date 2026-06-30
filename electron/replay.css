@@ -112,11 +112,17 @@ button:hover,
   border-color: #d9bcc5;
 }
 
+#fetch-button,
 #parse-button,
 #replay-button {
   border-color: #e8658b;
   background: linear-gradient(180deg, #ff8faf 0%, var(--accent) 100%);
   color: #fff;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 #clear-button {
