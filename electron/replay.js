@@ -1,24 +1,28 @@
 const canvas = document.getElementById('replay-canvas');
 const ctx = canvas.getContext('2d');
-const recordSelect = document.getElementById('record-select');
+const appRoot = document.getElementById('app');
+const chooser = document.getElementById('chooser');
+const stage = document.getElementById('stage');
+const recordList = document.getElementById('record-list');
+const backButton = document.getElementById('back-button');
 const replayButton = document.getElementById('replay-button');
 const clearButton = document.getElementById('clear-button');
 const speedInput = document.getElementById('speed-input');
-const speedOutput = document.getElementById('speed-output');
 const autoClearInput = document.getElementById('auto-clear-input');
 const statusText = document.getElementById('status');
+const stageStatusText = document.getElementById('stage-status');
 const titleText = document.getElementById('title');
-const pointCountText = document.getElementById('point-count');
-const durationText = document.getElementById('duration');
 
 let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
 let records = [];
 let selectedRecord = null;
 let replayTimerId = null;
 let autoClearTimerId = null;
+let paperRect = { x: 0, y: 0, width: 0, height: 0 };
 
 function setStatus(text) {
   statusText.textContent = text;
+  stageStatusText.textContent = text;
 }
 
 function resizeCanvas() {
@@ -26,13 +30,45 @@ function resizeCanvas() {
   dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
   canvas.width = Math.max(1, Math.round(rect.width * dpr));
   canvas.height = Math.max(1, Math.round(rect.height * dpr));
+  updatePaperRect();
   clearCanvas();
+}
+
+function updatePaperRect() {
+  const margin = 86 * dpr;
+  const maxWidth = Math.max(1, canvas.width - margin * 2);
+  const maxHeight = Math.max(1, canvas.height - margin * 2);
+  const lPrintRatio = 127 / 89;
+  let width = Math.min(maxWidth, maxHeight * lPrintRatio);
+  let height = width / lPrintRatio;
+  if (height > maxHeight) {
+    height = maxHeight;
+    width = height * lPrintRatio;
+  }
+  paperRect = {
+    x: (canvas.width - width) / 2,
+    y: (canvas.height - height) / 2,
+    width,
+    height,
+  };
 }
 
 function clearCanvas() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(46, 34, 38, 0.16)';
+  ctx.shadowBlur = 22 * dpr;
+  ctx.shadowOffsetY = 12 * dpr;
+  ctx.fillStyle = '#fffdf8';
+  ctx.fillRect(paperRect.x, paperRect.y, paperRect.width, paperRect.height);
+  ctx.restore();
+
+  ctx.strokeStyle = '#eadfce';
+  ctx.lineWidth = 1.5 * dpr;
+  ctx.strokeRect(paperRect.x, paperRect.y, paperRect.width, paperRect.height);
 }
 
 function stopReplay() {
@@ -62,8 +98,7 @@ function getPointLineWidth(baseLineWidth, point) {
 function drawStroke(stroke, points = stroke.points || []) {
   if (!points.length) return;
 
-  const width = canvas.width;
-  const height = canvas.height;
+  const { x, y, width, height } = paperRect;
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -74,7 +109,7 @@ function drawStroke(stroke, points = stroke.points || []) {
     const point = points[0];
     const radius = getPointLineWidth(baseLineWidth, point) / 2;
     ctx.beginPath();
-    ctx.arc(point.x * width, point.y * height, radius, 0, Math.PI * 2);
+    ctx.arc(x + point.x * width, y + point.y * height, radius, 0, Math.PI * 2);
     ctx.fillStyle = ctx.strokeStyle;
     ctx.fill();
     ctx.restore();
@@ -87,8 +122,8 @@ function drawStroke(stroke, points = stroke.points || []) {
     ctx.lineWidth =
       (getPointLineWidth(baseLineWidth, previous) + getPointLineWidth(baseLineWidth, point)) / 2;
     ctx.beginPath();
-    ctx.moveTo(previous.x * width, previous.y * height);
-    ctx.lineTo(point.x * width, point.y * height);
+    ctx.moveTo(x + previous.x * width, y + previous.y * height);
+    ctx.lineTo(x + point.x * width, y + point.y * height);
     ctx.stroke();
   }
 
@@ -207,28 +242,31 @@ function selectRecord(index) {
 
   if (!selectedRecord) {
     titleText.textContent = '未選択';
-    pointCountText.textContent = '0';
-    durationText.textContent = '0.00秒';
     setStatus('サーバに保存データがありません');
     return;
   }
 
   titleText.textContent = selectedRecord.talentName || selectedRecord.talent_name || '名称未設定';
-  pointCountText.textContent = String(countPoints(selectedRecord));
-  durationText.textContent = `${(calculateDuration(selectedRecord) / 1000).toFixed(2)}秒`;
-  setStatus('再生できます');
+  appRoot.classList.remove('app-choosing');
+  chooser.hidden = true;
+  stage.hidden = false;
+  requestAnimationFrame(() => {
+    resizeCanvas();
+    replayRecord(selectedRecord);
+  });
 }
 
 function renderRecords() {
-  recordSelect.textContent = '';
+  recordList.textContent = '';
   records.forEach((record, index) => {
-    const option = document.createElement('option');
-    option.value = String(index);
-    option.textContent = describeRecord(record, index);
-    recordSelect.append(option);
+    const button = document.createElement('button');
+    button.className = 'record-button';
+    button.type = 'button';
+    button.textContent = describeRecord(record, index);
+    button.addEventListener('click', () => selectRecord(index));
+    recordList.append(button);
   });
-  recordSelect.selectedIndex = records.length ? 0 : -1;
-  selectRecord(recordSelect.selectedIndex);
+  setStatus(records.length ? `${records.length}件から選択してください` : 'サーバに保存データがありません');
 }
 
 function isRecordLike(value) {
@@ -280,8 +318,13 @@ async function fetchRecordsOnStartup() {
   }
 }
 
-recordSelect.addEventListener('change', () => {
-  selectRecord(Number(recordSelect.value));
+backButton.addEventListener('click', () => {
+  stopReplay();
+  selectedRecord = null;
+  stage.hidden = true;
+  chooser.hidden = false;
+  appRoot.classList.add('app-choosing');
+  setStatus(records.length ? `${records.length}件から選択してください` : 'サーバに保存データがありません');
 });
 
 replayButton.addEventListener('click', () => {
@@ -292,10 +335,6 @@ clearButton.addEventListener('click', () => {
   stopReplay();
   clearCanvas();
   setStatus(selectedRecord ? '再生できます' : 'サーバに保存データがありません');
-});
-
-speedInput.addEventListener('input', () => {
-  speedOutput.textContent = `${Number(speedInput.value).toFixed(2)}x`;
 });
 
 window.addEventListener('resize', resizeCanvas);
