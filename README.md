@@ -18,6 +18,19 @@ open talent-sign-capture/index.html
 
 タレント名とキャンバスの間には、保存済み一覧が常に表示されます。一覧の項目を押すと、そのサインが書き順と速度に沿って再生されます。「再生」を押すと、現在選択中のサインをもう一度再生できます。
 
+## Electron再生ツール
+
+Supabaseに保存された `payload` をローカルで再生確認するElectronツールです。
+
+```bash
+npm install
+npm run replay
+```
+
+SupabaseのTable Editorで `sign_records` を開き、対象行の `payload` をコピーして、Electron画面のテキスト欄に貼り付けます。`payload` 単体、`payload` の配列、`sign_records` の行配列JSONのどれでも読み込めます。
+
+再生完了後は、初期設定で1.5秒後にキャンバスが白紙になります。
+
 ## 保存データ
 
 保存データの座標はキャンバスサイズに依存しない `0..1` の正規化座標です。印刷側では任意の印字領域サイズへスケールして利用できます。

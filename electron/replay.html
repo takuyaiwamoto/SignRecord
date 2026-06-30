@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign Replay</title>
+    <link rel="stylesheet" href="./replay.css" />
+  </head>
+  <body>
+    <main class="app">
+      <aside class="sidebar">
+        <header>
+          <p class="eyebrow">Local Sign Replay</p>
+          <h1>サイン再生</h1>
+        </header>
+
+        <section class="panel">
+          <h2>データ読み込み</h2>
+          <label class="file-button">
+            JSONを選択
+            <input id="file-input" type="file" accept="application/json,.json" />
+          </label>
+          <textarea
+            id="json-input"
+            placeholder="Supabaseのpayload、またはsign_recordsのJSONエクスポートを貼り付け"
+          ></textarea>
+          <button id="parse-button" type="button">貼り付けJSONを読み込み</button>
+          <p class="hint">
+            payload単体、payload配列、Supabase行配列のどれでも読み込めます。
+          </p>
+        </section>
+
+        <section class="panel">
+          <h2>保存済み</h2>
+          <select id="record-select" size="8" aria-label="再生するサイン"></select>
+        </section>
+
+        <section class="panel">
+          <h2>操作</h2>
+          <div class="button-row">
+            <button id="replay-button" type="button">再生</button>
+            <button id="clear-button" type="button">白紙</button>
+          </div>
+          <label class="range">
+            <span>速度</span>
+            <input id="speed-input" type="range" min="0.25" max="2" step="0.25" value="1" />
+            <output id="speed-output">1.00x</output>
+          </label>
+          <label class="check">
+            <input id="auto-clear-input" type="checkbox" checked />
+            <span>再生後1.5秒で白紙</span>
+          </label>
+        </section>
+      </aside>
+
+      <section class="stage">
+        <div class="stage-head">
+          <div>
+            <p id="status" role="status" aria-live="polite">JSONを読み込んでください</p>
+            <h2 id="title">未選択</h2>
+          </div>
+          <dl class="metrics">
+            <div>
+              <dt>点数</dt>
+              <dd id="point-count">0</dd>
+            </div>
+            <div>
+              <dt>時間</dt>
+              <dd id="duration">0.00秒</dd>
+            </div>
+          </dl>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="replay-canvas"></canvas>
+        </div>
+      </section>
+    </main>
+
+    <script src="./replay.js"></script>
+  </body>
+</html>

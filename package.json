@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node build.mjs"
+    "build": "node build.mjs",
+    "replay": "node electron/run.cjs"
+  },
+  "devDependencies": {
+    "electron": "^42.5.0"
   }
 }
