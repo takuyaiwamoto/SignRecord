@@ -91,13 +91,40 @@ function getPointLineWidth(baseLineWidth, point) {
   return baseLineWidth * (0.55 + normalizePressure(point.pressure) * 0.9);
 }
 
-function getBaseLineWidth(stroke) {
-  const targetShortSide = Math.max(1, Math.min(paperRect.width, paperRect.height));
+function getSourceCanvasSize() {
   const sourceCanvas = selectedRecord?.canvas || {};
-  const sourceShortSide = Math.max(
-    1,
-    Math.min(Number(sourceCanvas.width) || canvas.width, Number(sourceCanvas.height) || canvas.height)
-  );
+  return {
+    width: Math.max(1, Number(sourceCanvas.width) || canvas.width),
+    height: Math.max(1, Number(sourceCanvas.height) || canvas.height),
+  };
+}
+
+function getSignatureRect() {
+  const source = getSourceCanvasSize();
+  const sourceRatio = source.width / source.height;
+  const paperRatio = paperRect.width / paperRect.height;
+  let width = paperRect.width;
+  let height = paperRect.height;
+
+  if (sourceRatio > paperRatio) {
+    height = width / sourceRatio;
+  } else {
+    width = height * sourceRatio;
+  }
+
+  return {
+    x: paperRect.x + (paperRect.width - width) / 2,
+    y: paperRect.y + (paperRect.height - height) / 2,
+    width,
+    height,
+  };
+}
+
+function getBaseLineWidth(stroke) {
+  const signatureRect = getSignatureRect();
+  const source = getSourceCanvasSize();
+  const targetShortSide = Math.max(1, Math.min(signatureRect.width, signatureRect.height));
+  const sourceShortSide = Math.max(1, Math.min(source.width, source.height));
   const relativeScale = targetShortSide / sourceShortSide;
   return (Number(stroke.size) || 6) * dpr * relativeScale * (stroke.tool === 'eraser' ? 2.4 : 1);
 }
@@ -105,7 +132,7 @@ function getBaseLineWidth(stroke) {
 function drawStroke(stroke, points = stroke.points || []) {
   if (!points.length) return;
 
-  const { x, y, width, height } = paperRect;
+  const { x, y, width, height } = getSignatureRect();
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
