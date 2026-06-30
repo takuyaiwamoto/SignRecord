@@ -1,9 +1,6 @@
 const canvas = document.getElementById('replay-canvas');
 const ctx = canvas.getContext('2d');
-const fileInput = document.getElementById('file-input');
-const jsonInput = document.getElementById('json-input');
 const fetchButton = document.getElementById('fetch-button');
-const parseButton = document.getElementById('parse-button');
 const recordSelect = document.getElementById('record-select');
 const replayButton = document.getElementById('replay-button');
 const clearButton = document.getElementById('clear-button');
@@ -213,7 +210,7 @@ function selectRecord(index) {
     titleText.textContent = '未選択';
     pointCountText.textContent = '0';
     durationText.textContent = '0.00秒';
-    setStatus('JSONを読み込んでください');
+    setStatus('サーバから取得してください');
     return;
   }
 
@@ -264,15 +261,6 @@ function extractRecords(value) {
   return extracted;
 }
 
-function loadJsonText(text) {
-  const parsed = JSON.parse(text);
-  const nextRecords = extractRecords(parsed);
-  if (!nextRecords.length) throw new Error('サインレコードが見つかりません');
-  records = nextRecords;
-  renderRecords();
-  setStatus(`${records.length}件を読み込みました`);
-}
-
 function loadRows(rows) {
   const nextRecords = extractRecords(rows);
   if (!nextRecords.length) throw new Error('サインレコードが見つかりません');
@@ -296,29 +284,6 @@ fetchButton.addEventListener('click', async () => {
   }
 });
 
-fileInput.addEventListener('change', async () => {
-  const file = fileInput.files?.[0];
-  if (!file) return;
-
-  try {
-    loadJsonText(await file.text());
-  } catch (error) {
-    console.error(error);
-    setStatus('読み込み失敗');
-  } finally {
-    fileInput.value = '';
-  }
-});
-
-parseButton.addEventListener('click', () => {
-  try {
-    loadJsonText(jsonInput.value);
-  } catch (error) {
-    console.error(error);
-    setStatus('読み込み失敗');
-  }
-});
-
 recordSelect.addEventListener('change', () => {
   selectRecord(Number(recordSelect.value));
 });
@@ -330,7 +295,7 @@ replayButton.addEventListener('click', () => {
 clearButton.addEventListener('click', () => {
   stopReplay();
   clearCanvas();
-  setStatus(selectedRecord ? '再生できます' : 'JSONを読み込んでください');
+  setStatus(selectedRecord ? '再生できます' : 'サーバから取得してください');
 });
 
 speedInput.addEventListener('input', () => {

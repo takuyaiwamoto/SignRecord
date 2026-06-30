@@ -30,8 +30,7 @@ body {
 
 button,
 input,
-select,
-textarea {
+select {
   font: inherit;
 }
 
@@ -89,7 +88,6 @@ h2 {
   gap: 10px;
 }
 
-.file-button,
 button {
   min-height: 42px;
   border: 1px solid var(--line);
@@ -103,17 +101,11 @@ button {
   text-align: center;
 }
 
-.file-button input {
-  display: none;
-}
-
-button:hover,
-.file-button:hover {
+button:hover {
   border-color: #d9bcc5;
 }
 
 #fetch-button,
-#parse-button,
 #replay-button {
   border-color: #e8658b;
   background: linear-gradient(180deg, #ff8faf 0%, var(--accent) 100%);
@@ -129,16 +121,6 @@ button:disabled {
   color: var(--accent-dark);
 }
 
-textarea {
-  min-height: 130px;
-  resize: vertical;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  outline: none;
-  padding: 10px;
-}
-
-textarea:focus,
 select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px rgba(239, 120, 152, 0.16);

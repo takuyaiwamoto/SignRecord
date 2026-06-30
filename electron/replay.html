@@ -17,18 +17,7 @@
         <section class="panel">
           <h2>データ読み込み</h2>
           <button id="fetch-button" type="button">サーバから取得</button>
-          <label class="file-button">
-            JSONを選択
-            <input id="file-input" type="file" accept="application/json,.json" />
-          </label>
-          <textarea
-            id="json-input"
-            placeholder="Supabaseのpayload、またはsign_recordsのJSONエクスポートを貼り付け"
-          ></textarea>
-          <button id="parse-button" type="button">貼り付けJSONを読み込み</button>
-          <p class="hint">
-            payload単体、payload配列、Supabase行配列のどれでも読み込めます。
-          </p>
+          <p class="hint">Supabaseのsign_recordsから最新200件を読み込みます。</p>
         </section>
 
         <section class="panel">
@@ -57,7 +46,7 @@
       <section class="stage">
         <div class="stage-head">
           <div>
-            <p id="status" role="status" aria-live="polite">JSONを読み込んでください</p>
+            <p id="status" role="status" aria-live="polite">サーバから取得してください</p>
             <h2 id="title">未選択</h2>
           </div>
           <dl class="metrics">
