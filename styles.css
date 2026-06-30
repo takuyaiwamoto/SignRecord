@@ -191,8 +191,10 @@ input:not([type]) {
 
 .canvas-frame {
   display: grid;
-  min-height: 320px;
-  min-height: min(58dvh, 620px);
+  width: min(100%, 430px);
+  aspect-ratio: 89 / 127;
+  align-self: start;
+  justify-self: center;
   border: 2px solid #f0d6dc;
   border-radius: 8px;
   background:
@@ -546,7 +548,7 @@ input:not([type]) {
   }
 
   .canvas-frame {
-    min-height: 48dvh;
+    min-height: 0;
   }
 
   .toolbar {
