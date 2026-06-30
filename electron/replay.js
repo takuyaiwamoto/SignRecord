@@ -1,6 +1,5 @@
 const canvas = document.getElementById('replay-canvas');
 const ctx = canvas.getContext('2d');
-const fetchButton = document.getElementById('fetch-button');
 const recordSelect = document.getElementById('record-select');
 const replayButton = document.getElementById('replay-button');
 const clearButton = document.getElementById('clear-button');
@@ -210,7 +209,7 @@ function selectRecord(index) {
     titleText.textContent = '未選択';
     pointCountText.textContent = '0';
     durationText.textContent = '0.00秒';
-    setStatus('サーバから取得してください');
+    setStatus('サーバに保存データがありません');
     return;
   }
 
@@ -269,8 +268,7 @@ function loadRows(rows) {
   setStatus(`サーバから${records.length}件を取得しました`);
 }
 
-fetchButton.addEventListener('click', async () => {
-  fetchButton.disabled = true;
+async function fetchRecordsOnStartup() {
   setStatus('サーバから取得中');
 
   try {
@@ -279,10 +277,8 @@ fetchButton.addEventListener('click', async () => {
   } catch (error) {
     console.error(error);
     setStatus('サーバ取得失敗: service_roleキーかSELECT権限を確認');
-  } finally {
-    fetchButton.disabled = false;
   }
-});
+}
 
 recordSelect.addEventListener('change', () => {
   selectRecord(Number(recordSelect.value));
@@ -295,7 +291,7 @@ replayButton.addEventListener('click', () => {
 clearButton.addEventListener('click', () => {
   stopReplay();
   clearCanvas();
-  setStatus(selectedRecord ? '再生できます' : 'サーバから取得してください');
+  setStatus(selectedRecord ? '再生できます' : 'サーバに保存データがありません');
 });
 
 speedInput.addEventListener('input', () => {
@@ -303,4 +299,7 @@ speedInput.addEventListener('input', () => {
 });
 
 window.addEventListener('resize', resizeCanvas);
-requestAnimationFrame(resizeCanvas);
+requestAnimationFrame(() => {
+  resizeCanvas();
+  fetchRecordsOnStartup();
+});

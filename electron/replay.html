@@ -15,12 +15,6 @@
         </header>
 
         <section class="panel">
-          <h2>データ読み込み</h2>
-          <button id="fetch-button" type="button">サーバから取得</button>
-          <p class="hint">Supabaseのsign_recordsから最新200件を読み込みます。</p>
-        </section>
-
-        <section class="panel">
           <h2>保存済み</h2>
           <select id="record-select" size="8" aria-label="再生するサイン"></select>
         </section>
@@ -46,7 +40,7 @@
       <section class="stage">
         <div class="stage-head">
           <div>
-            <p id="status" role="status" aria-live="polite">サーバから取得してください</p>
+            <p id="status" role="status" aria-live="polite">サーバから取得中</p>
             <h2 id="title">未選択</h2>
           </div>
           <dl class="metrics">

@@ -27,7 +27,7 @@ npm install
 npm run replay
 ```
 
-Electron画面の「サーバから取得」を押すと、Supabaseの `sign_records` から最新200件を取得して一覧表示します。ローカルだけで安全に読むため、`talent-sign-capture/.env.local` に以下を保存します。
+Electronを起動すると、Supabaseの `sign_records` から最新200件を自動取得して一覧表示します。ローカルだけで安全に読むため、`talent-sign-capture/.env.local` に以下を保存します。
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=Supabaseのservice_roleキー
