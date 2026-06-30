@@ -40,9 +40,10 @@ function updatePaperRect() {
   }
   width *= 0.4;
   height *= 0.4;
+  const verticalSpace = Math.max(0, canvas.height - height);
   paperRect = {
     x: (canvas.width - width) / 2,
-    y: Math.max(12 * dpr, (canvas.height - height) * 0.08),
+    y: Math.max(12 * dpr, Math.min(verticalSpace - 12 * dpr, verticalSpace * 0.92)),
     width,
     height,
   };
