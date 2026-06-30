@@ -39,6 +39,8 @@ function updatePaperRect() {
     height = maxHeight;
     width = height * lPrintRatio;
   }
+  width *= 0.5;
+  height *= 0.5;
   paperRect = {
     x: (canvas.width - width) / 2,
     y: (canvas.height - height) / 2,
