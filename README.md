@@ -27,7 +27,7 @@ npm install
 npm run replay
 ```
 
-Electronを起動すると、Supabaseの `sign_records` から最新200件を自動取得し、「どのサインを書く？」の選択画面を表示します。サインを選ぶと、白いキャンバス上のL版比率の色紙に書き順どおり再生します。ローカルだけで安全に読むため、`talent-sign-capture/.env.local` に以下を保存します。
+Electronを起動すると、Supabaseの `sign_records` から最新200件を自動取得し、「どのサインを書く？」の選択画面を表示します。サインを選ぶと、ボタンやテキストのない白いキャンバスへ切り替わり、縦向きL判比率の色紙に書き順どおり再生します。ローカルだけで安全に読むため、`talent-sign-capture/.env.local` に以下を保存します。
 
 ```bash
 SUPABASE_SERVICE_ROLE_KEY=Supabaseのservice_roleキー

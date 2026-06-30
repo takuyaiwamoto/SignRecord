@@ -4,14 +4,9 @@ const appRoot = document.getElementById('app');
 const chooser = document.getElementById('chooser');
 const stage = document.getElementById('stage');
 const recordList = document.getElementById('record-list');
-const backButton = document.getElementById('back-button');
-const replayButton = document.getElementById('replay-button');
-const clearButton = document.getElementById('clear-button');
 const speedInput = document.getElementById('speed-input');
 const autoClearInput = document.getElementById('auto-clear-input');
 const statusText = document.getElementById('status');
-const stageStatusText = document.getElementById('stage-status');
-const titleText = document.getElementById('title');
 
 let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
 let records = [];
@@ -22,7 +17,6 @@ let paperRect = { x: 0, y: 0, width: 0, height: 0 };
 
 function setStatus(text) {
   statusText.textContent = text;
-  stageStatusText.textContent = text;
 }
 
 function resizeCanvas() {
@@ -38,7 +32,7 @@ function updatePaperRect() {
   const margin = 86 * dpr;
   const maxWidth = Math.max(1, canvas.width - margin * 2);
   const maxHeight = Math.max(1, canvas.height - margin * 2);
-  const lPrintRatio = 127 / 89;
+  const lPrintRatio = 89 / 127;
   let width = Math.min(maxWidth, maxHeight * lPrintRatio);
   let height = width / lPrintRatio;
   if (height > maxHeight) {
@@ -241,12 +235,10 @@ function selectRecord(index) {
   clearCanvas();
 
   if (!selectedRecord) {
-    titleText.textContent = '未選択';
     setStatus('サーバに保存データがありません');
     return;
   }
 
-  titleText.textContent = selectedRecord.talentName || selectedRecord.talent_name || '名称未設定';
   appRoot.classList.remove('app-choosing');
   chooser.hidden = true;
   stage.hidden = false;
@@ -317,25 +309,6 @@ async function fetchRecordsOnStartup() {
     setStatus('サーバ取得失敗: service_roleキーかSELECT権限を確認');
   }
 }
-
-backButton.addEventListener('click', () => {
-  stopReplay();
-  selectedRecord = null;
-  stage.hidden = true;
-  chooser.hidden = false;
-  appRoot.classList.add('app-choosing');
-  setStatus(records.length ? `${records.length}件から選択してください` : 'サーバに保存データがありません');
-});
-
-replayButton.addEventListener('click', () => {
-  if (selectedRecord) replayRecord(selectedRecord);
-});
-
-clearButton.addEventListener('click', () => {
-  stopReplay();
-  clearCanvas();
-  setStatus(selectedRecord ? '再生できます' : 'サーバに保存データがありません');
-});
 
 window.addEventListener('resize', resizeCanvas);
 requestAnimationFrame(() => {

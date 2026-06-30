@@ -119,54 +119,6 @@ h1 {
   background: #fff;
 }
 
-.stage-head {
-  position: absolute;
-  z-index: 2;
-  top: 18px;
-  left: 18px;
-  right: 18px;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 14px;
-  pointer-events: none;
-}
-
-.stage-head > * {
-  pointer-events: auto;
-}
-
-.stage-head h2 {
-  overflow: hidden;
-  font-size: 22px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-#stage-status {
-  color: var(--mint);
-  font-size: 12px;
-  font-weight: 800;
-  text-align: center;
-}
-
-.stage-actions {
-  display: flex;
-  gap: 8px;
-}
-
-#replay-button {
-  border-color: #e8658b;
-  background: linear-gradient(180deg, #ff8faf 0%, var(--accent) 100%);
-  color: #fff;
-}
-
-#clear-button,
-#back-button {
-  background: rgba(255, 255, 255, 0.92);
-}
-
 .canvas-wrap {
   position: absolute;
   inset: 0;
