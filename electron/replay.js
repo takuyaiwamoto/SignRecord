@@ -106,7 +106,7 @@ function runCompletionMotion() {
         animatePaperMotion(
           { rotationDeg: 360, slideY: 0 },
           { rotationDeg: 360, slideY: canvas.height + paperRect.height * 2 },
-          1300
+          1560
         );
       }, 1000);
     });
