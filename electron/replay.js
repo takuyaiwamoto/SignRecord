@@ -43,7 +43,7 @@ function updatePaperRect() {
   height *= 0.5;
   paperRect = {
     x: (canvas.width - width) / 2,
-    y: (canvas.height - height) / 2,
+    y: Math.max(24 * dpr, (canvas.height - height) * 0.22),
     width,
     height,
   };
