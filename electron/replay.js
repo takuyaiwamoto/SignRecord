@@ -91,6 +91,17 @@ function getPointLineWidth(baseLineWidth, point) {
   return baseLineWidth * (0.55 + normalizePressure(point.pressure) * 0.9);
 }
 
+function getBaseLineWidth(stroke) {
+  const targetShortSide = Math.max(1, Math.min(paperRect.width, paperRect.height));
+  const sourceCanvas = selectedRecord?.canvas || {};
+  const sourceShortSide = Math.max(
+    1,
+    Math.min(Number(sourceCanvas.width) || canvas.width, Number(sourceCanvas.height) || canvas.height)
+  );
+  const relativeScale = targetShortSide / sourceShortSide;
+  return (Number(stroke.size) || 6) * dpr * relativeScale * (stroke.tool === 'eraser' ? 2.4 : 1);
+}
+
 function drawStroke(stroke, points = stroke.points || []) {
   if (!points.length) return;
 
@@ -99,7 +110,7 @@ function drawStroke(stroke, points = stroke.points || []) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.strokeStyle = stroke.tool === 'eraser' ? '#ffffff' : normalizeColor(stroke.color);
-  const baseLineWidth = (Number(stroke.size) || 6) * dpr * (stroke.tool === 'eraser' ? 2.4 : 1);
+  const baseLineWidth = getBaseLineWidth(stroke);
 
   if (points.length === 1) {
     const point = points[0];
