@@ -19,6 +19,7 @@ let paperRect = { x: 0, y: 0, width: 0, height: 0 };
 let paperMotion = { rotationDeg: 0, slideY: 0 };
 let motionAnimationId = null;
 let currentDrawItems = [];
+let replayFinished = false;
 
 function setStatus(text) {
   statusText.textContent = text;
@@ -78,6 +79,7 @@ function clearCanvas() {
 }
 
 function stopReplay() {
+  replayFinished = false;
   if (replayStartDelayTimerId) {
     window.clearTimeout(replayStartDelayTimerId);
     replayStartDelayTimerId = null;
@@ -113,7 +115,10 @@ function runCompletionMotion() {
         animatePaperMotion(
           { rotationDeg: 360, slideY: 0 },
           { rotationDeg: 360, slideY: canvas.height + paperRect.height * 2 },
-          1560
+          1560,
+          () => {
+            replayFinished = true;
+          }
         );
       }, 1000);
     });
@@ -237,16 +242,6 @@ function drawPrintStroke(printCtx, record, stroke, printPaperRect) {
     (Math.min(rect.width, rect.height) / Math.max(1, rect.sourceShortSide)) *
     (stroke.tool === 'eraser' ? 2.4 : 1);
 
-  printCtx.save();
-  printCtx.translate(
-    printPaperRect.x + printPaperRect.width / 2,
-    printPaperRect.y + printPaperRect.height / 2
-  );
-  printCtx.rotate(Math.PI);
-  printCtx.translate(
-    -(printPaperRect.x + printPaperRect.width / 2),
-    -(printPaperRect.y + printPaperRect.height / 2)
-  );
   printCtx.lineCap = 'round';
   printCtx.lineJoin = 'round';
   printCtx.strokeStyle = stroke.tool === 'eraser' ? '#fffdf8' : normalizeColor(stroke.color);
@@ -258,7 +253,6 @@ function drawPrintStroke(printCtx, record, stroke, printPaperRect) {
     printCtx.arc(rect.x + point.x * rect.width, rect.y + point.y * rect.height, radius, 0, Math.PI * 2);
     printCtx.fillStyle = printCtx.strokeStyle;
     printCtx.fill();
-    printCtx.restore();
     return;
   }
 
@@ -273,23 +267,29 @@ function drawPrintStroke(printCtx, record, stroke, printPaperRect) {
     printCtx.stroke();
   }
 
-  printCtx.restore();
 }
 
 function createPrintImage(record) {
+  const sourceCanvas = document.createElement('canvas');
+  sourceCanvas.width = 890;
+  sourceCanvas.height = 1270;
+  const sourceCtx = sourceCanvas.getContext('2d');
+  const printPaperRect = { x: 0, y: 0, width: sourceCanvas.width, height: sourceCanvas.height };
+
+  sourceCtx.fillStyle = '#ffffff';
+  sourceCtx.fillRect(0, 0, sourceCanvas.width, sourceCanvas.height);
+  sourceCtx.fillStyle = '#fffdf8';
+  sourceCtx.fillRect(printPaperRect.x, printPaperRect.y, printPaperRect.width, printPaperRect.height);
+
+  (record.strokes || []).forEach((stroke) => drawPrintStroke(sourceCtx, record, stroke, printPaperRect));
+
   const printCanvas = document.createElement('canvas');
-  printCanvas.width = 890;
-  printCanvas.height = 1270;
+  printCanvas.width = sourceCanvas.width;
+  printCanvas.height = sourceCanvas.height;
   const printCtx = printCanvas.getContext('2d');
-  const printPaperRect = { x: 0, y: 0, width: printCanvas.width, height: printCanvas.height };
-
-  printCtx.fillStyle = '#ffffff';
-  printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
-  printCtx.fillStyle = '#fffdf8';
-  printCtx.fillRect(printPaperRect.x, printPaperRect.y, printPaperRect.width, printPaperRect.height);
-
-  (record.strokes || []).forEach((stroke) => drawPrintStroke(printCtx, record, stroke, printPaperRect));
-
+  printCtx.translate(printCanvas.width / 2, printCanvas.height / 2);
+  printCtx.rotate(Math.PI);
+  printCtx.drawImage(sourceCanvas, -sourceCanvas.width / 2, -sourceCanvas.height / 2);
   return printCanvas.toDataURL('image/png');
 }
 
@@ -362,6 +362,7 @@ function normalizeStrokeTiming(stroke, strokeIndex) {
 
 function replayRecord(record) {
   stopReplay();
+  replayFinished = false;
   resetStageMotion();
   paperMotion = { rotationDeg: 180, slideY: 0 };
   currentDrawItems = [];
@@ -438,6 +439,17 @@ async function startVideoThenReplay(record, runId) {
     replayStartDelayTimerId = null;
     replayRecord(record);
   }, 4000);
+}
+
+function restartSelectedRecord() {
+  if (!selectedRecord || stage.hidden || !replayFinished) return;
+  replayRunId += 1;
+  const runId = replayRunId;
+  stopReplay();
+  replayFinished = false;
+  resetStageMotion();
+  resizeCanvas();
+  startVideoThenReplay(selectedRecord, runId);
 }
 
 function calculateDuration(record) {
@@ -548,6 +560,10 @@ async function fetchRecordsOnStartup() {
 }
 
 window.addEventListener('resize', resizeCanvas);
+window.addEventListener('keydown', (event) => {
+  if (event.key.toLowerCase() !== 'r' || event.metaKey || event.ctrlKey || event.altKey) return;
+  restartSelectedRecord();
+});
 requestAnimationFrame(() => {
   resizeCanvas();
   fetchRecordsOnStartup();
