@@ -114,35 +114,6 @@ function printImage(dataUrl) {
   });
 }
 
-function createVideoHtml() {
-  const videoUrl = pathToFileURL(DEMO_VIDEO_PATH).href;
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <style>
-      html, body {
-        width: 100%;
-        height: 100%;
-        margin: 0;
-        overflow: hidden;
-        background: #000;
-      }
-      video {
-        display: block;
-        width: 100vw;
-        height: 100vh;
-        object-fit: contain;
-        background: #000;
-      }
-    </style>
-  </head>
-  <body>
-    <video src="${videoUrl}" playsinline preload="auto"></video>
-  </body>
-</html>`;
-}
-
 async function ensureVideoWindow() {
   if (!fs.existsSync(DEMO_VIDEO_PATH)) {
     throw new Error(`Video file not found: ${DEMO_VIDEO_PATH}`);
@@ -168,7 +139,11 @@ async function ensureVideoWindow() {
     videoWindow = null;
   });
 
-  await videoWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(createVideoHtml())}`);
+  await videoWindow.loadFile(path.join(__dirname, 'video.html'), {
+    query: {
+      src: pathToFileURL(DEMO_VIDEO_PATH).href,
+    },
+  });
   return videoWindow;
 }
 
@@ -185,11 +160,18 @@ async function playDemoVideo() {
         resolve(result);
       };
       video.addEventListener('playing', () => done({ ok: true }), { once: true });
-      video.pause();
-      video.currentTime = 0;
-      const playPromise = video.play();
-      if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch((error) => done({ ok: false, error: error.message }));
+      const start = () => {
+        video.pause();
+        video.currentTime = 0;
+        const playPromise = video.play();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch((error) => done({ ok: false, error: error.message }));
+        }
+      };
+      if (video.readyState >= 1) {
+        start();
+      } else {
+        video.addEventListener('loadedmetadata', start, { once: true });
       }
       setTimeout(() => done({ ok: false, timeout: true }), 3000);
     });
