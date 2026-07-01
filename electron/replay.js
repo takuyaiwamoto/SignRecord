@@ -45,8 +45,8 @@ function updatePaperRect() {
     height = maxHeight;
     width = height * lPrintRatio;
   }
-  width *= 0.529;
-  height *= 0.529;
+  width *= 0.6348;
+  height *= 0.6348;
   const verticalSpace = Math.max(0, canvas.height - height);
   paperRect = {
     x: (canvas.width - width) / 2,
