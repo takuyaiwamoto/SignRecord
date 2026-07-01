@@ -426,7 +426,7 @@ function replayRecord(record) {
 
 async function startVideoThenReplay(record, runId) {
   try {
-    await window.signReplay.openVideoWindow();
+    await window.signReplay.playVideo();
   } catch (error) {
     console.error(error);
   }

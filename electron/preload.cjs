@@ -3,5 +3,5 @@ const { contextBridge, ipcRenderer } = require('electron');
 contextBridge.exposeInMainWorld('signReplay', {
   fetchRecords: () => ipcRenderer.invoke('sign-records:fetch'),
   printImage: (dataUrl) => ipcRenderer.invoke('sign-records:print-image', dataUrl),
-  openVideoWindow: () => ipcRenderer.invoke('sign-video:open'),
+  playVideo: () => ipcRenderer.invoke('sign-video:play'),
 });

@@ -10,6 +10,8 @@ const DEMO_VIDEO_PATH = '/Users/a14881/Documents/9thSignSystem/video1Demo.mp4';
 let mainWindow = null;
 let videoWindow = null;
 
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
 function loadLocalEnv() {
   const envPath = path.join(__dirname, '..', '.env.local');
   if (!fs.existsSync(envPath)) return;
@@ -112,33 +114,9 @@ function printImage(dataUrl) {
   });
 }
 
-async function openVideoWindow() {
-  if (!fs.existsSync(DEMO_VIDEO_PATH)) {
-    throw new Error(`Video file not found: ${DEMO_VIDEO_PATH}`);
-  }
-
-  if (videoWindow && !videoWindow.isDestroyed()) {
-    videoWindow.close();
-  }
-
-  videoWindow = new BrowserWindow({
-    width: 960,
-    height: 540,
-    title: 'Demo Video',
-    backgroundColor: '#000000',
-    webPreferences: {
-      contextIsolation: true,
-      nodeIntegration: false,
-      sandbox: true,
-    },
-  });
-
-  videoWindow.on('closed', () => {
-    videoWindow = null;
-  });
-
+function createVideoHtml() {
   const videoUrl = pathToFileURL(DEMO_VIDEO_PATH).href;
-  const html = `<!doctype html>
+  return `<!doctype html>
 <html>
   <head>
     <meta charset="utf-8" />
@@ -160,12 +138,44 @@ async function openVideoWindow() {
     </style>
   </head>
   <body>
-    <video src="${videoUrl}" autoplay playsinline></video>
+    <video src="${videoUrl}" playsinline preload="auto"></video>
   </body>
 </html>`;
+}
 
-  await videoWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
-  return videoWindow.webContents.executeJavaScript(`
+async function ensureVideoWindow() {
+  if (!fs.existsSync(DEMO_VIDEO_PATH)) {
+    throw new Error(`Video file not found: ${DEMO_VIDEO_PATH}`);
+  }
+
+  if (videoWindow && !videoWindow.isDestroyed()) {
+    return videoWindow;
+  }
+
+  videoWindow = new BrowserWindow({
+    width: 960,
+    height: 540,
+    title: 'Demo Video',
+    backgroundColor: '#000000',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  videoWindow.on('closed', () => {
+    videoWindow = null;
+  });
+
+  await videoWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(createVideoHtml())}`);
+  return videoWindow;
+}
+
+async function playDemoVideo() {
+  const window = await ensureVideoWindow();
+  window.show();
+  return window.webContents.executeJavaScript(`
     new Promise((resolve) => {
       const video = document.querySelector('video');
       let resolved = false;
@@ -175,6 +185,8 @@ async function openVideoWindow() {
         resolve(result);
       };
       video.addEventListener('playing', () => done({ ok: true }), { once: true });
+      video.pause();
+      video.currentTime = 0;
       const playPromise = video.play();
       if (playPromise && typeof playPromise.catch === 'function') {
         playPromise.catch((error) => done({ ok: false, error: error.message }));
@@ -211,13 +223,19 @@ loadLocalEnv();
 
 ipcMain.handle('sign-records:fetch', fetchSignRecords);
 ipcMain.handle('sign-records:print-image', (_event, dataUrl) => printImage(dataUrl));
-ipcMain.handle('sign-video:open', openVideoWindow);
+ipcMain.handle('sign-video:play', playDemoVideo);
 
 app.whenReady().then(() => {
   createWindow();
+  ensureVideoWindow().catch((error) => {
+    console.error(error);
+  });
 
   app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    if (!mainWindow || mainWindow.isDestroyed()) createWindow();
+    ensureVideoWindow().catch((error) => {
+      console.error(error);
+    });
   });
 });
 
