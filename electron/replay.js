@@ -5,6 +5,7 @@ const chooser = document.getElementById('chooser');
 const stage = document.getElementById('stage');
 const recordList = document.getElementById('record-list');
 const speedInput = document.getElementById('speed-input');
+const printOnOpenInput = document.getElementById('print-on-open');
 const statusText = document.getElementById('status');
 
 let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
@@ -196,6 +197,95 @@ function getBaseLineWidth(stroke) {
   return (Number(stroke.size) || 6) * dpr * relativeScale * (stroke.tool === 'eraser' ? 2.4 : 1);
 }
 
+function getPrintSignatureRect(record, printPaperRect) {
+  const sourceCanvas = record?.canvas || {};
+  const sourceWidth = Math.max(1, Number(sourceCanvas.width) || printPaperRect.width);
+  const sourceHeight = Math.max(1, Number(sourceCanvas.height) || printPaperRect.height);
+  const sourceRatio = sourceWidth / sourceHeight;
+  const paperRatio = printPaperRect.width / printPaperRect.height;
+  let width = printPaperRect.width;
+  let height = printPaperRect.height;
+
+  if (sourceRatio > paperRatio) {
+    height = width / sourceRatio;
+  } else {
+    width = height * sourceRatio;
+  }
+
+  return {
+    x: printPaperRect.x + (printPaperRect.width - width) / 2,
+    y: printPaperRect.y + (printPaperRect.height - height) / 2,
+    width,
+    height,
+    sourceShortSide: Math.min(sourceWidth, sourceHeight),
+  };
+}
+
+function drawPrintStroke(printCtx, record, stroke, printPaperRect) {
+  const points = stroke.points || [];
+  if (!points.length) return;
+
+  const rect = getPrintSignatureRect(record, printPaperRect);
+  const baseLineWidth =
+    (Number(stroke.size) || 6) *
+    (Math.min(rect.width, rect.height) / Math.max(1, rect.sourceShortSide)) *
+    (stroke.tool === 'eraser' ? 2.4 : 1);
+
+  printCtx.save();
+  printCtx.lineCap = 'round';
+  printCtx.lineJoin = 'round';
+  printCtx.strokeStyle = stroke.tool === 'eraser' ? '#fffdf8' : normalizeColor(stroke.color);
+
+  if (points.length === 1) {
+    const point = points[0];
+    const radius = getPointLineWidth(baseLineWidth, point) / 2;
+    printCtx.beginPath();
+    printCtx.arc(rect.x + point.x * rect.width, rect.y + point.y * rect.height, radius, 0, Math.PI * 2);
+    printCtx.fillStyle = printCtx.strokeStyle;
+    printCtx.fill();
+    printCtx.restore();
+    return;
+  }
+
+  for (let i = 1; i < points.length; i += 1) {
+    const previous = points[i - 1];
+    const point = points[i];
+    printCtx.lineWidth =
+      (getPointLineWidth(baseLineWidth, previous) + getPointLineWidth(baseLineWidth, point)) / 2;
+    printCtx.beginPath();
+    printCtx.moveTo(rect.x + previous.x * rect.width, rect.y + previous.y * rect.height);
+    printCtx.lineTo(rect.x + point.x * rect.width, rect.y + point.y * rect.height);
+    printCtx.stroke();
+  }
+
+  printCtx.restore();
+}
+
+function createPrintImage(record) {
+  const printCanvas = document.createElement('canvas');
+  printCanvas.width = 890;
+  printCanvas.height = 1270;
+  const printCtx = printCanvas.getContext('2d');
+  const printPaperRect = { x: 0, y: 0, width: printCanvas.width, height: printCanvas.height };
+
+  printCtx.fillStyle = '#ffffff';
+  printCtx.fillRect(0, 0, printCanvas.width, printCanvas.height);
+  printCtx.fillStyle = '#fffdf8';
+  printCtx.fillRect(printPaperRect.x, printPaperRect.y, printPaperRect.width, printPaperRect.height);
+
+  (record.strokes || []).forEach((stroke) => drawPrintStroke(printCtx, record, stroke, printPaperRect));
+
+  return printCanvas.toDataURL('image/png');
+}
+
+async function printCompletedSignature(record) {
+  try {
+    await window.signReplay.printImage(createPrintImage(record));
+  } catch (error) {
+    console.error(error);
+  }
+}
+
 function drawStroke(stroke, points = stroke.points || []) {
   if (!points.length) return;
 
@@ -355,6 +445,9 @@ function selectRecord(index) {
   resetStageMotion();
   requestAnimationFrame(() => {
     resizeCanvas();
+    if (printOnOpenInput.checked) {
+      printCompletedSignature(selectedRecord);
+    }
     replayRecord(selectedRecord);
   });
 }

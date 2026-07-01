@@ -47,6 +47,66 @@ async function fetchSignRecords() {
   return response.json();
 }
 
+function printImage(dataUrl) {
+  if (!/^data:image\/png;base64,/.test(dataUrl || '')) {
+    return Promise.reject(new Error('Invalid print image'));
+  }
+
+  return new Promise((resolve, reject) => {
+    const printWindow = new BrowserWindow({
+      show: false,
+      width: 890,
+      height: 1270,
+      webPreferences: {
+        contextIsolation: true,
+        nodeIntegration: false,
+        sandbox: true,
+      },
+    });
+
+    const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      @page { margin: 0; }
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        background: #ffffff;
+      }
+      img {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain;
+      }
+    </style>
+  </head>
+  <body><img src="${dataUrl}" /></body>
+</html>`;
+
+    printWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+    printWindow.webContents.once('did-finish-load', () => {
+      printWindow.webContents.print(
+        {
+          silent: true,
+          printBackground: true,
+        },
+        (success, failureReason) => {
+          printWindow.close();
+          if (!success) {
+            reject(new Error(failureReason || 'Print failed'));
+            return;
+          }
+          resolve({ ok: true });
+        }
+      );
+    });
+  });
+}
+
 function createWindow() {
   const window = new BrowserWindow({
     width: 1180,
@@ -69,6 +129,7 @@ function createWindow() {
 loadLocalEnv();
 
 ipcMain.handle('sign-records:fetch', fetchSignRecords);
+ipcMain.handle('sign-records:print-image', (_event, dataUrl) => printImage(dataUrl));
 
 app.whenReady().then(() => {
   createWindow();
