@@ -88,6 +88,7 @@ function printImage(dataUrl) {
         width: 100vw;
         height: 100vh;
         object-fit: contain;
+        transform: rotate(180deg);
       }
     </style>
   </head>
