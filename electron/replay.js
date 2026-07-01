@@ -12,6 +12,8 @@ let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 3));
 let records = [];
 let selectedRecord = null;
 let replayTimerId = null;
+let replayStartDelayTimerId = null;
+let replayRunId = 0;
 let motionTimerIds = [];
 let paperRect = { x: 0, y: 0, width: 0, height: 0 };
 let paperMotion = { rotationDeg: 0, slideY: 0 };
@@ -76,6 +78,10 @@ function clearCanvas() {
 }
 
 function stopReplay() {
+  if (replayStartDelayTimerId) {
+    window.clearTimeout(replayStartDelayTimerId);
+    replayStartDelayTimerId = null;
+  }
   if (replayTimerId) {
     window.clearTimeout(replayTimerId);
     replayTimerId = null;
@@ -418,6 +424,22 @@ function replayRecord(record) {
   tick();
 }
 
+async function startVideoThenReplay(record, runId) {
+  try {
+    await window.signReplay.openVideoWindow();
+  } catch (error) {
+    console.error(error);
+  }
+
+  if (runId !== replayRunId) return;
+
+  replayStartDelayTimerId = window.setTimeout(() => {
+    if (runId !== replayRunId) return;
+    replayStartDelayTimerId = null;
+    replayRecord(record);
+  }, 4000);
+}
+
 function calculateDuration(record) {
   if (Number.isFinite(record.capture?.durationMs)) return record.capture.durationMs;
   return (record.strokes || []).reduce((maxMs, stroke) => {
@@ -440,6 +462,8 @@ function describeRecord(record, index) {
 
 function selectRecord(index) {
   selectedRecord = records[index] || null;
+  replayRunId += 1;
+  const runId = replayRunId;
   stopReplay();
   clearCanvas();
 
@@ -457,7 +481,7 @@ function selectRecord(index) {
     if (printOnOpenInput.checked) {
       printCompletedSignature(selectedRecord);
     }
-    replayRecord(selectedRecord);
+    startVideoThenReplay(selectedRecord, runId);
   });
 }
 

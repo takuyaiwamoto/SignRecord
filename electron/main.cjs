@@ -1,9 +1,14 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('node:fs');
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 
 const SUPABASE_URL = 'https://tqwtcsbdfriyiirzmmit.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4T6OLyoDE9-eS9y-TTZIFQ_OXICQf9t';
+const DEMO_VIDEO_PATH = '/Users/a14881/Documents/9thSignSystem/video1Demo.mp4';
+
+let mainWindow = null;
+let videoWindow = null;
 
 function loadLocalEnv() {
   const envPath = path.join(__dirname, '..', '.env.local');
@@ -107,8 +112,80 @@ function printImage(dataUrl) {
   });
 }
 
+async function openVideoWindow() {
+  if (!fs.existsSync(DEMO_VIDEO_PATH)) {
+    throw new Error(`Video file not found: ${DEMO_VIDEO_PATH}`);
+  }
+
+  if (videoWindow && !videoWindow.isDestroyed()) {
+    videoWindow.close();
+  }
+
+  videoWindow = new BrowserWindow({
+    width: 960,
+    height: 540,
+    title: 'Demo Video',
+    backgroundColor: '#000000',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true,
+    },
+  });
+
+  videoWindow.on('closed', () => {
+    videoWindow = null;
+  });
+
+  const videoUrl = pathToFileURL(DEMO_VIDEO_PATH).href;
+  const html = `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+      }
+      video {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        object-fit: contain;
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <video src="${videoUrl}" autoplay playsinline></video>
+  </body>
+</html>`;
+
+  await videoWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  return videoWindow.webContents.executeJavaScript(`
+    new Promise((resolve) => {
+      const video = document.querySelector('video');
+      let resolved = false;
+      const done = (result) => {
+        if (resolved) return;
+        resolved = true;
+        resolve(result);
+      };
+      video.addEventListener('playing', () => done({ ok: true }), { once: true });
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch((error) => done({ ok: false, error: error.message }));
+      }
+      setTimeout(() => done({ ok: false, timeout: true }), 3000);
+    });
+  `);
+}
+
 function createWindow() {
-  const window = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1180,
     height: 820,
     minWidth: 860,
@@ -123,13 +200,18 @@ function createWindow() {
     },
   });
 
-  window.loadFile(path.join(__dirname, 'replay.html'));
+  mainWindow.on('closed', () => {
+    mainWindow = null;
+  });
+
+  mainWindow.loadFile(path.join(__dirname, 'replay.html'));
 }
 
 loadLocalEnv();
 
 ipcMain.handle('sign-records:fetch', fetchSignRecords);
 ipcMain.handle('sign-records:print-image', (_event, dataUrl) => printImage(dataUrl));
+ipcMain.handle('sign-video:open', openVideoWindow);
 
 app.whenReady().then(() => {
   createWindow();
