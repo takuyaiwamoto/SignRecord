@@ -232,6 +232,15 @@ function drawPrintStroke(printCtx, record, stroke, printPaperRect) {
     (stroke.tool === 'eraser' ? 2.4 : 1);
 
   printCtx.save();
+  printCtx.translate(
+    printPaperRect.x + printPaperRect.width / 2,
+    printPaperRect.y + printPaperRect.height / 2
+  );
+  printCtx.rotate(Math.PI);
+  printCtx.translate(
+    -(printPaperRect.x + printPaperRect.width / 2),
+    -(printPaperRect.y + printPaperRect.height / 2)
+  );
   printCtx.lineCap = 'round';
   printCtx.lineJoin = 'round';
   printCtx.strokeStyle = stroke.tool === 'eraser' ? '#fffdf8' : normalizeColor(stroke.color);
