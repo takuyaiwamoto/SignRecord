@@ -7,7 +7,6 @@ const { pathToFileURL } = require('node:url');
 const SUPABASE_URL = 'https://tqwtcsbdfriyiirzmmit.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4T6OLyoDE9-eS9y-TTZIFQ_OXICQf9t';
 const DEMO_VIDEO_PATH = '/Users/a14881/Documents/9thSignSystem/video1Demo.mp4';
-const PRINT_PRINTER_NAME = 'Brother_MFC_J6983CDW_2';
 const PRINT_PAGE_SIZE = { width: 5, height: 7 };
 
 let mainWindow = null;
@@ -128,8 +127,6 @@ function sendPdfToPrinter(pdfBuffer) {
     fs.writeFileSync(filePath, pdfBuffer);
 
     const args = [
-      '-d',
-      PRINT_PRINTER_NAME,
       '-o',
       'PageSize=5x7',
       '-o',
