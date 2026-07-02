@@ -449,6 +449,9 @@ function restartSelectedRecord() {
   replayFinished = false;
   resetStageMotion();
   resizeCanvas();
+  if (printOnOpenInput.checked) {
+    printCompletedSignature(selectedRecord);
+  }
   startVideoThenReplay(selectedRecord, runId);
 }
 
