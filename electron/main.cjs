@@ -6,6 +6,7 @@ const { pathToFileURL } = require('node:url');
 const SUPABASE_URL = 'https://tqwtcsbdfriyiirzmmit.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_4T6OLyoDE9-eS9y-TTZIFQ_OXICQf9t';
 const DEMO_VIDEO_PATH = '/Users/a14881/Documents/9thSignSystem/video1Demo.mp4';
+const TWO_L_PAGE_SIZE_MICRONS = { width: 127000, height: 178000 };
 
 let mainWindow = null;
 let videoWindow = null;
@@ -76,7 +77,10 @@ function printImage(dataUrl) {
   <head>
     <meta charset="utf-8" />
     <style>
-      @page { margin: 0; }
+      @page {
+        size: 127mm 178mm;
+        margin: 0;
+      }
       html, body {
         width: 100%;
         height: 100%;
@@ -101,6 +105,10 @@ function printImage(dataUrl) {
         {
           silent: true,
           printBackground: true,
+          margins: { marginType: 'none' },
+          pageSize: TWO_L_PAGE_SIZE_MICRONS,
+          landscape: false,
+          scaleFactor: 100,
         },
         (success, failureReason) => {
           printWindow.close();
