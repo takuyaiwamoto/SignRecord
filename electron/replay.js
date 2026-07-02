@@ -13,6 +13,7 @@ let records = [];
 let selectedRecord = null;
 let replayTimerId = null;
 let replayStartDelayTimerId = null;
+let printDelayTimerId = null;
 let replayRunId = 0;
 let motionTimerIds = [];
 let paperRect = { x: 0, y: 0, width: 0, height: 0 };
@@ -301,6 +302,21 @@ async function printCompletedSignature(record) {
   }
 }
 
+function cancelDelayedPrint() {
+  if (!printDelayTimerId) return;
+  window.clearTimeout(printDelayTimerId);
+  printDelayTimerId = null;
+}
+
+function printCompletedSignatureLater(record, runId) {
+  cancelDelayedPrint();
+  printDelayTimerId = window.setTimeout(() => {
+    printDelayTimerId = null;
+    if (runId !== replayRunId) return;
+    printCompletedSignature(record);
+  }, 5000);
+}
+
 function drawStroke(stroke, points = stroke.points || []) {
   if (!points.length) return;
 
@@ -446,11 +462,12 @@ function restartSelectedRecord() {
   replayRunId += 1;
   const runId = replayRunId;
   stopReplay();
+  cancelDelayedPrint();
   replayFinished = false;
   resetStageMotion();
   resizeCanvas();
   if (printOnOpenInput.checked) {
-    printCompletedSignature(selectedRecord);
+    printCompletedSignatureLater(selectedRecord, runId);
   }
   startVideoThenReplay(selectedRecord, runId);
 }
@@ -480,6 +497,7 @@ function selectRecord(index) {
   replayRunId += 1;
   const runId = replayRunId;
   stopReplay();
+  cancelDelayedPrint();
   clearCanvas();
 
   if (!selectedRecord) {
@@ -494,7 +512,7 @@ function selectRecord(index) {
   requestAnimationFrame(() => {
     resizeCanvas();
     if (printOnOpenInput.checked) {
-      printCompletedSignature(selectedRecord);
+      printCompletedSignatureLater(selectedRecord, runId);
     }
     startVideoThenReplay(selectedRecord, runId);
   });
